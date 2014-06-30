@@ -1,0 +1,6 @@
+A Small C Brainfuck Interpreter
+Evin Sellin, 2014
+GPL v3.0
+Not very complicated. Use as you will.
+
+Example: bf helloworld.bf

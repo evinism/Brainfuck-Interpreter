@@ -2,17 +2,19 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define DEPTH_LIMIT 1000
+
 int main(int argC, char** argV){
-	char *program = malloc(100);
-	int programLength = 100;
-	int endOfProgram;
-	char *memory = malloc(100);
+	int programLength = 100;//Initial Vals.
 	int memLength = 100;
+	char *program = malloc(programLength);
+	int endOfProgram;
+	char *memory = malloc(memLength);
 	//Initialize memory
 	int i;
 	for( i = 0; i < memLength; i++)
 		memory[i] = 0;
-	int pc = 0;//Program counter!
+	int pc = 0;//Program counter
 	if( argC != 2 ){
 		printf("Usage: %s [name of file]\n", argV[0]);
 		return 0;
@@ -28,17 +30,20 @@ int main(int argC, char** argV){
 			program = realloc(program, 2*programLength);//We want a small number of reallocs, so increasing by constant size doesn't make sense
 			if( program==NULL ){
 				printf("Loading Program: Can't allocate new memory!\n");
+				free(program);
+				free(memory);
 				return 1;
 			}
 			programLength *= 2;
 		}
-		program[pc] = c;//Use program counter to insert the thing into the array;
+		program[pc] = c;//Use program counter to insert the instructions into the array;
 		pc++;
 	}
 	endOfProgram = pc;
 	pc = 0;//Now that we're done, reset, yo.
 	int mempos = 0;
-	int nestedLoops = 0;
+	int depth = 0;
+	int bracket[DEPTH_LIMIT];
 	while( pc<endOfProgram ){
 		switch( program[pc] ){
 			case '>':
@@ -47,6 +52,9 @@ int main(int argC, char** argV){
 					memory = realloc(memory, 2*memLength);//Same thing for memory.
 					if( memory==NULL ){
 						printf("Program: Can't allocate new memory!\n");
+						free(program);
+						free(memory);
+						fclose(fp);
 						return 1;
 					}
 					for( i = memLength; i < memLength*2; i++)
@@ -70,27 +78,28 @@ int main(int argC, char** argV){
 				memory[mempos] = getchar();
 				break;
 			case '[':
+				depth++;
+				if( depth > DEPTH_LIMIT ){
+					printf("Warning: Depth Limit Exceeded\n");
+				}
+				bracket[depth] = pc;
 				break;
 			case ']':
-				if(memory[mempos] == 0)
-					break;
-				while(1){
-					--pc;
-					if( pc < 0 ){
-						printf("Error: ] has no opening bracket.\n");
-						return 0;
+				if(memory[mempos] == 0){
+					if(depth > 0){
+						depth--;
+					}else{
+						printf("Error: Unmatched Bracket at PC %d\n", pc);
+						free(program);
+						free(memory);
+						fclose(fp);
+						return 1;
 					}
-					if( program[pc] == '['){
-						if( nestedLoops == 0 )
-							break;
-						else
-							nestedLoops--;
-					}else if(program[pc] == ']'){
-						nestedLoops++;
-					}
+				}else{
+					pc = bracket[depth];
 				}
 				break;
-			default: //Ignore all ofther characters
+			default: //Ignore all other characters
 				break;
 		}
 		pc++;
@@ -98,4 +107,8 @@ int main(int argC, char** argV){
 	free(program);
 	free(memory);
 	fclose(fp);
+	if( depth > 0){
+		printf("Warning: Unmatched [ bracket at EOF\n");
+	}
+	return 0;
 }

@@ -78,11 +78,28 @@ int main(int argC, char** argV){
 				memory[mempos] = getchar();
 				break;
 			case '[':
-				depth++;
-				if( depth > DEPTH_LIMIT ){
-					printf("Warning: Depth Limit Exceeded\n");
-				}
-				bracket[depth] = pc;
+        if( memory[mempos] == 0 ){
+          //Forward miniscan
+          int tempDepth = depth + 1;
+          while( tempDepth > depth ){
+            pc++;
+            switch( program[pc] ){
+              case '[':
+                tempDepth++;
+                break;
+              case ']':
+                tempDepth--; 
+                break;
+            }
+          }
+          //End forward miniscan
+        }else{
+          depth++;
+          if( depth > DEPTH_LIMIT ){
+            printf("Warning: Depth Limit Exceeded\n");
+          }
+          bracket[depth] = pc;
+        }
 				break;
 			case ']':
 				if(memory[mempos] == 0){
